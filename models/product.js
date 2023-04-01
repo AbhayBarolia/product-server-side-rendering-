@@ -1,21 +1,5 @@
-const fs = require('fs');
-const path = require('path');
-
-const p = path.join(
-  path.dirname(process.mainModule.filename),
-  'data',
-  'products.json'
-);
-
-const getProductsFromFile = cb => {
-  fs.readFile(p, (err, fileContent) => {
-    if (err) {
-      cb([]);
-    } else {
-      cb(JSON.parse(fileContent));
-    }
-  });
-};
+const cart = require('./cart');
+const db = require('../util/database');
 
 module.exports = class Product {
   constructor(id, title, imageUrl, description, price) {
@@ -27,49 +11,23 @@ module.exports = class Product {
   }
 
   save() {
-    getProductsFromFile(products => {
-      if(this.id!=null)
-      {
-        const existingProdIndex=products.findIndex(prod=>prod.id===this.id);
-        const updateProduct = [...products];
-        updateProduct[existingProdIndex]=this;
-        fs.writeFile(p, JSON.stringify(updateProduct), err => {
-          console.log(err);
-        });
-      }
-      else{
-        this.id=Math.random();
-      products.push(this);
-      fs.writeFile(p, JSON.stringify(products), err => {
-        console.log(err);
-      });
-      }
-      
-    });
+   return db.execute('INSERT INTO products (title,price, description, imageURL) VALUES(?, ?, ?, ?)',
+   [this.title,this.price,this.description,this.imageUrl]
+   )
   }
 
-  static fetchAll(cb) {
-    getProductsFromFile(cb);
+  static fetchAll() {
+   return db.execute('SELECT * FROM PRODUCTS');
   }
 
 
   static deleteProduct(pId)
   { 
-    getProductsFromFile(products => {
-      const existingProdIndex=products.findIndex(prod=>prod.id==pId);
-      console.log(existingProdIndex+" index");
-    const updateProduct = [...products];
-    updateProduct.splice(existingProdIndex,1);
-    fs.writeFile(p, JSON.stringify(updateProduct), err => {
-    console.log(err);
-     });
-    });
+   return db.execute('DELETE from products where id= ?',[pId]);
   }
 
-  static findById(id,cb) {
-    getProductsFromFile(products => {
-     const product = products.find(p=> p.id===id);
-     cb(product);
-    });
-  }
-};
+  static findById(id) {
+    return db.execute('SELECT * FROM PRODUCTS WHERE id= ?',[id]);
+}
+
+}
